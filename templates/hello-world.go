@@ -81,8 +81,7 @@ const (
     <h1>Hello world!</h1>`
 
 	webDeploy = `    <div id='rancherDeployment'>
-      <h3>Deployment {{.Deployname}}</h3>
-      <b>App version</b> {{.Version}}<br />
+      <h3>{{.Deployname}} version {{.Version}}</h3>
       <b>Pod name</b> {{.Podname}}<br />
       <b>Node name</b> {{.Nodename}}<br />
       <b>Host name</b> {{.Host}}<br />
