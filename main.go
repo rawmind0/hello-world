@@ -9,13 +9,26 @@ import (
 	"strings"
 )
 
-const defaultListenPort = "80"
+const (
+	defaultListenPort = "80"
+	defaultDeploySep  = "-"
+	defaultEnvSep     = "="
+)
+
+var (
+	// VERSION gets overridden at build time using -X main.VERSION=$VERSION
+	VERSION  = "dev"
+	released = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)
+)
 
 type HelloWorldConfig struct {
-	Hostname string
-	Services map[string]string
-	Headers  http.Header
-	Host     string
+	Podname    string
+	Deployname string
+	Services   map[string]string
+	Headers    http.Header
+	Nodename   string
+	Host       string
+	Version    string
 }
 
 func (config *HelloWorldConfig) GetManifest() (string, error) {
@@ -25,22 +38,42 @@ func (config *HelloWorldConfig) GetManifest() (string, error) {
 func (config *HelloWorldConfig) getServices() {
 	k8sServices := make(map[string]string)
 
+	deployPrefix := strings.Replace(strings.ToUpper(config.Deployname), defaultDeploySep, "_", -1)
 	for _, evar := range os.Environ() {
-		show := strings.Split(evar, "=")
-		regName := regexp.MustCompile("^.*_PORT$")
+		show := strings.Split(evar, defaultEnvSep)
+		regName := regexp.MustCompile("^" + deployPrefix + ".*_PORT$")
 		regLink := regexp.MustCompile("^(tcp|udp)://.*")
 		if regName.MatchString(show[0]) && regLink.MatchString(show[1]) {
 			k8sServices[strings.TrimSuffix(show[0], "_PORT")] = show[1]
 		}
+
 	}
 
 	config.Services = k8sServices
 }
 
+func (config *HelloWorldConfig) getDeployName() {
+	serviceName := ""
+	if len(config.Podname) > 0 {
+		deployNameFull := strings.Split(config.Podname, defaultDeploySep)
+		for _, name := range deployNameFull[:len(deployNameFull)-2] {
+			if len(serviceName) == 0 {
+				serviceName = name
+				continue
+			}
+			serviceName = serviceName + defaultDeploySep + name
+		}
+	}
+	config.Deployname = serviceName
+}
+
 func (config *HelloWorldConfig) Init(r *http.Request) {
-	config.Hostname, _ = os.Hostname()
+	config.Podname, _ = os.Hostname()
+	config.Nodename = os.Getenv("MY_NODE_IP")
 	config.Host = r.Host
 	config.Headers = r.Header
+	config.Version = VERSION
+	config.getDeployName()
 	config.getServices()
 }
 

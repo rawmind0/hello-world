@@ -1,10 +1,9 @@
 package templates
 
 const (
-	reqInfoID = "reqInfo"
-
 	webHead = `<html>
   <head>
+    <meta http-equiv="refresh" content="5"> 
     <title>Rancher</title>
     <link rel="icon" href="img/favicon.png">
     <style>
@@ -29,16 +28,70 @@ const (
         margin-bottom: 40px;
       }
     </style>
+    <script>
+      function getCookie(NameOfCookie){
+          if (document.cookie.length > 0) {              
+          begin = document.cookie.indexOf(NameOfCookie+"=");       
+          if (begin != -1) {           
+            begin += NameOfCookie.length+1;       
+            end = document.cookie.indexOf(";", begin);
+            if (end == -1) end = document.cookie.length;
+              return unescape(document.cookie.substring(begin, end));
+          } 
+        }
+        return null;
+      }
+
+      function setCookie(NameOfCookie, value, expiredays) {
+      var ExpireDate = new Date ();
+      ExpireDate.setTime(ExpireDate.getTime() + (expiredays * 24 * 3600 * 1000));
+
+        document.cookie = NameOfCookie + "=" + escape(value) + 
+        ((expiredays == null) ? "" : "; expires=" + ExpireDate.toGMTString());
+      }
+
+      function delCookie (NameOfCookie) {
+        if (getCookie(NameOfCookie)) {
+          document.cookie = NameOfCookie + "=" +
+          "; expires=Thu, 01-Jan-70 00:00:01 GMT";
+        }
+      }
+      function showHeaders() {
+          var b = document.getElementById("rancherButton");
+          var x = document.getElementById("rancherHeaders");
+          if (x.style.display === "none") {
+              x.style.display = "block";
+              b.innerHTML = "Hide request headers";
+              setCookie('viewHeaders','true',365)
+          } else {
+              x.style.display = "none";
+              b.innerHTML = "Show request headers";
+              setCookie('viewHeaders','false',365)
+          }
+      }
+      function DoTheCookieStuff()
+      {
+        viewer=getCookie('viewHeaders');
+        if (viewer=='true') {showHeaders()}
+      }
+    </script>
   </head>
-  <body>
+  <body onLoad="DoTheCookieStuff()">
     <img id="logo" src="img/rancher-logo.svg" alt="Rancher logo" width=400 />
-    <h1>Hello world!</h1>
-    <h3>My hostname is {{.Hostname}}</h3>`
+    <h1>Hello world!</h1>`
+
+	webDeploy = `    <div id='rancherDeployment'>
+      <h3>Deployment {{.Deployname}}</h3>
+      <b>App version</b> {{.Version}}<br />
+      <b>Pod name</b> {{.Podname}}<br />
+      <b>Node name</b> {{.Nodename}}<br />
+      <b>Host name</b> {{.Host}}<br />
+    </div>`
 
 	webServices = `{{- $length := len .Services }} 
   {{- if gt $length 0 }}
-    <div id='Services'>
-      <h3>k8s services found {{$length}}</h3>
+    <div id='rancherServices'>
+      <h3>Services</h3>
     {{ range $k,$v := .Services }}
       <b>{{ $k }}</b> {{ $v }}<br />
     {{ end }}
@@ -46,11 +99,9 @@ const (
     <br />
   {{ end }}`
 
-	webDetails = `    <button class='button' onclick='myFunction()'>Show request details</button>
-    <div id="` + reqInfoID + `" style='display:none'>
-      <h3>Request info</h3>
-      <b>Host:</b> {{.Host}} <br />
-      <b>Pod:</b> {{.Hostname}} </b><br />
+	webHeaders = `    <button id='rancherButton' class='button' onclick='showHeaders()'>Show request headers</button>
+    <div id="rancherHeaders" style='display:none'>
+      <br />
     {{ range $k,$v := .Headers }}
       <b>{{ $k }}:</b> {{ $v }}<br />
     {{ end }}
@@ -67,22 +118,17 @@ const (
     </div>
     <br />`
 
-	webTail = `    <script>
-      function myFunction() {
-          var x = document.getElementById("` + reqInfoID + `");
-          if (x.style.display === "none") {
-              x.style.display = "block";
-          } else {
-              x.style.display = "none";
-          }
-      }
-    </script>
-  </body>
+	webTail = `  </body>
 </html>`
 
 	HelloWorldTemplate = webHead + `
+` + webDeploy + `
 ` + webServices + `
 ` + webLinks + `
-` + webDetails + `
+` + webHeaders + `
 ` + webTail
+
+	HelloWorldDeploy   = webDeploy
+	HelloWorldServices = webServices
+	HelloWorldHeaders  = webHeaders
 )

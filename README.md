@@ -58,6 +58,12 @@ spec:
         ports:
         - containerPort: 80
           protocol: TCP
+        env:
+        - name: MY_NODE_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
       restartPolicy: Always
 ---
 apiVersion: v1
